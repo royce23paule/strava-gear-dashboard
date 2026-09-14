@@ -138,8 +138,18 @@ def get_valid_access_token():
         st.stop()
 
     if token_data.get("expires_at", 0) < time.time() + 300:
-        token_data = refresh_access_token(token_data)
-        save_json(TOKEN_FILE, token_data)
+        try:
+            token_data = refresh_access_token(token_data)
+            save_json(TOKEN_FILE, token_data)
+        except requests.exceptions.HTTPError:
+            if TOKEN_FILE.exists():
+                TOKEN_FILE.unlink()
+            st.error(
+                "Die Strava-Verbindung ist abgelaufen oder wurde widerrufen. "
+                "Bitte erneut mit Strava verbinden."
+            )
+            st.link_button("Erneut mit Strava verbinden", get_authorization_url())
+            st.stop()
 
     return token_data["access_token"]
 
