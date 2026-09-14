@@ -1,0 +1,13 @@
+# Strava credentials and runtime data - never commit these
+strava_token.json
+strava_api_cache.json
+strava_dashboard_settings.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Streamlit local secrets
+.streamlit/secrets.toml
