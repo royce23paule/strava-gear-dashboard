@@ -265,10 +265,37 @@ with st.sidebar:
         st.rerun()
 
 
-athlete, gear_lookup, activities, from_cache = load_strava_data(
-    access_token,
-    force_refresh=force_refresh,
-)
+try:
+    athlete, gear_lookup, activities, from_cache = load_strava_data(
+        access_token,
+        force_refresh=force_refresh,
+    )
+except requests.exceptions.HTTPError as exc:
+    status = exc.response.status_code if exc.response is not None else None
+    try:
+        detail = exc.response.json().get("message", "") if exc.response is not None else ""
+    except ValueError:
+        detail = ""
+
+    if status == 401:
+        if TOKEN_FILE.exists():
+            TOKEN_FILE.unlink()
+        st.error(
+            "Strava hat den Zugriff abgelehnt (401 Unauthorized). "
+            "Der Token scheint ungültig zu sein. Bitte erneut verbinden."
+        )
+        st.link_button("Erneut mit Strava verbinden", get_authorization_url())
+    elif status == 429:
+        st.error(
+            "Strava-API-Limit erreicht (429 Too Many Requests). "
+            "Bitte einige Minuten warten und dann über 'Daten neu von Strava laden' erneut versuchen."
+        )
+    else:
+        st.error(
+            f"Fehler beim Abruf von Strava (HTTP {status}). {detail}".strip()
+        )
+
+    st.stop()
 
 st.caption("Daten aus Cache geladen" if from_cache else "Daten neu von Strava geladen")
 
